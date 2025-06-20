@@ -3,58 +3,62 @@ use std::f32::consts::PI;
 use nalgebra::{Matrix4, Vector4};
 
 const DT: f32 = 0.0001;
-const STEPSIZE: f32 = 0.001;
-const MAXSTEPS: usize = 150;
+const STEPSIZE: f32 = 0.007;
+const MAXSTEPS: usize = 1500;
+const NUM_PATHS: i32 = 10;
 
 const RS: f32 = 1.;
-const N: usize = 1;
 
-const DATAPOINTS: usize = 100;
+const DATAPOINTS: usize = 50;
 
 
 fn main() {
-    // Initial conditions go into the integration state variable
-    let mut state = [
-        Vector4::new(1., 1.35, -PI/4., PI/4.),
-        Vector4::new(f32::sqrt(2.) / 2., -f32::sqrt(2.) / 2., -PI/2., -PI/32.)
-    ];
+    println!("r = \\sqrt{{{:.3} - z^2}}", RS.powi(2)); // for desmos3d visualization
+    // loop through multiple trajectories
+    for n in 0..NUM_PATHS {
+        // Initial conditions go into the integration state variable
+        let mut state = [
+            Vector4::new(1., 3., PI/16., PI/2.),
+            Vector4::new(f32::sqrt(2.) / 2., (n as f32 + 5.) * -1.4, 3., -1.)
+        ];
 
-    // Save the states until the end so they can be printed in a convenient format
-    let mut saved_states: Vec<[Vector4<f32>;2]> = Vec::with_capacity(DATAPOINTS);
-    'outer: for _ in 0..DATAPOINTS {
-        saved_states.push(state); // save this step
+        // Save the states until the end so they can be printed in a convenient format
+        let mut saved_states: Vec<[Vector4<f32>;2]> = Vec::with_capacity(DATAPOINTS);
+        'outer: for _ in 0..DATAPOINTS {
+            saved_states.push(state); // save this step
 
-        // compute many small time steps for one data point
-        for _ in 0..MAXSTEPS {
-            if let Some(newstate) = geodesic_step(state[0], state[1]) {
-                state = newstate;
+            // compute many small time steps for one data point
+            for _ in 0..MAXSTEPS {
+                if let Some(newstate) = geodesic_step(state[0], state[1]) {
+                    state = newstate;
+                }
+                // exit if integration could not continue
+                else {break 'outer;}
             }
-            // exit if integration could not continue
-            else {break 'outer;}
         }
-    }
 
-    // output data in Desmos3D readable format
-    println!("l_{N} = (r_{N} \\cos(p_{N}) \\sin(a_{N}), r_{N} \\sin(p_{N}) \\sin(a_{N}), r_{N} \\cos(a_{N}))");
-    println!("l_{N}[1]");
+        // output data in Desmos3D readable format
+        println!("l_{n} = (r_{n} \\cos(p_{n}) \\sin(a_{n}), r_{n} \\sin(p_{n}) \\sin(a_{n}), r_{n} \\cos(a_{n}))");
+        println!("l_{n}[1]");
 
-    print!("r_{N} = [");
-    for i in 0..saved_states.len() - 1 {
-        print!("{:.3}, ", saved_states[i][0].y);
-    }
-    println!("{:.3}]", saved_states.last().unwrap()[0].y);
+        print!("r_{n} = [");
+        for i in 0..saved_states.len() - 1 {
+            print!("{:.3}, ", saved_states[i][0].y);
+        }
+        println!("{:.3}]", saved_states.last().unwrap()[0].y);
 
-    print!("p_{N} = [");
-    for i in 0..saved_states.len() - 1 {
-        print!("{:.3}, ", saved_states[i][0].z);
-    }
-    println!("{:.3}]", saved_states.last().unwrap()[0].z);
+        print!("p_{n} = [");
+        for i in 0..saved_states.len() - 1 {
+            print!("{:.3}, ", saved_states[i][0].z);
+        }
+        println!("{:.3}]", saved_states.last().unwrap()[0].z);
 
-    print!("a_{N} = [");
-    for i in 0..saved_states.len() - 1 {
-        print!("{:.3}, ", saved_states[i][0].w);
+        print!("a_{n} = [");
+        for i in 0..saved_states.len() - 1 {
+            print!("{:.3}, ", saved_states[i][0].w);
+        }
+        println!("{:.3}]", saved_states.last().unwrap()[0].w);
     }
-    println!("{:.3}]", saved_states.last().unwrap()[0].w);
 }
 
 // Spacetime metric
@@ -146,5 +150,4 @@ fn geodesic_step(x: Vector4<f32>, v: Vector4<f32>) -> Option<[Vector4<f32>; 2]> 
     } else {
         Some([new_x, new_v])
     }
-    
 }

@@ -3,7 +3,7 @@ use std::f32::consts::PI;
 use nalgebra::{Matrix4, Vector4};
 
 const DT: f32 = 0.0001;
-const STEPSIZE: f32 = 0.007;
+const STEPSIZE: f32 = 0.0001;
 const MAXSTEPS: usize = 1500;
 const NUM_PATHS: i32 = 10;
 
@@ -18,8 +18,8 @@ fn main() {
     for n in 0..NUM_PATHS {
         // Initial conditions go into the integration state variable
         let mut state = [
-            Vector4::new(1., 3., PI/16., PI/2.),
-            Vector4::new(f32::sqrt(2.) / 2., (n as f32 + 5.) * -1.4, 3., -1.)
+            Vector4::new(1., 3., PI/2., PI / 2.),
+            Vector4::new(f32::sqrt(2.) / 2., -f32::sqrt(2.) / 2., (n as f32 - 5.) / 10., 0.)
         ];
 
         // Save the states until the end so they can be printed in a convenient format
@@ -67,7 +67,7 @@ fn metric(x: Vector4<f32>) -> Matrix4<f32> {
         -(1. - RS / x.y), 0., 0., 0.,
         0., 1. / (1. - RS / x.y), 0., 0.,
         0., 0., x.y.powi(2), 0.,
-        0., 0., 0., x.y.powi(2) * x.z.powi(2)
+        0., 0., 0., x.y.powi(2) * x.z.sin().powi(2)
     )
 }
 
@@ -139,7 +139,7 @@ fn geodesic_step(x: Vector4<f32>, v: Vector4<f32>) -> Option<[Vector4<f32>; 2]> 
     );
 
     // normalize so space steps are a specific size
-    let v_space_magnitude = v.y*v.y + x.y*x.y*(v.z*v.z + x.z.sin().powi(2) * v.w*v.w);
+    let v_space_magnitude = v.y*v.y / (1. - RS / x.y) + x.y*x.y*(v.z*v.z + x.z.sin().powi(2) * v.w*v.w);
     let dt = STEPSIZE / v_space_magnitude;
 
     let new_v = v + dt * dvdt;

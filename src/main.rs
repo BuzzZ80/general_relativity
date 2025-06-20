@@ -140,5 +140,11 @@ fn geodesic_step(x: Vector4<f32>, v: Vector4<f32>) -> Option<[Vector4<f32>; 2]> 
 
     let new_v = v + dt * dvdt;
     let new_x = x + dt * v;
-    Some([new_x, new_v])
+
+    if new_x.magnitude().is_nan() || new_v.magnitude().is_nan() {
+        None
+    } else {
+        Some([new_x, new_v])
+    }
+    
 }

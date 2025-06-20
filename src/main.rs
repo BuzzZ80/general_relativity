@@ -7,26 +7,35 @@ const STEPSIZE: f32 = 0.001;
 const MAXSTEPS: usize = 150;
 
 const RS: f32 = 1.;
-const N: usize = 5;
+const N: usize = 1;
+
+const DATAPOINTS: usize = 100;
 
 
 fn main() {
+    // Initial conditions go into the integration state variable
     let mut state = [
         Vector4::new(1., 1.35, -PI/4., PI/4.),
         Vector4::new(f32::sqrt(2.) / 2., -f32::sqrt(2.) / 2., -PI/2., -PI/32.)
     ];
-    let mut saved_states: Vec<[Vector4<f32>;2]> = Vec::with_capacity(150);
-    'outer: for _ in 0..150 {
-        saved_states.push(state);
+
+    // Save the states until the end so they can be printed in a convenient format
+    let mut saved_states: Vec<[Vector4<f32>;2]> = Vec::with_capacity(DATAPOINTS);
+    'outer: for _ in 0..DATAPOINTS {
+        saved_states.push(state); // save this step
+
+        // compute many small time steps for one data point
         for _ in 0..MAXSTEPS {
             if let Some(newstate) = geodesic_step(state[0], state[1]) {
                 state = newstate;
             }
+            // exit if integration could not continue
             else {break 'outer;}
         }
     }
 
-    println!("l_{N} = (r_{N} cos(p_{N}) sin(a_{N}), r_{N} sin(p_{N}) sin(a_{N}), r_{N} cos(a_{N}))");
+    // output data in Desmos3D readable format
+    println!("l_{N} = (r_{N} \\cos(p_{N}) \\sin(a_{N}), r_{N} \\sin(p_{N}) \\sin(a_{N}), r_{N} \\cos(a_{N}))");
     println!("l_{N}[1]");
 
     print!("r_{N} = [");
@@ -48,6 +57,7 @@ fn main() {
     println!("{:.3}]", saved_states.last().unwrap()[0].w);
 }
 
+// Spacetime metric
 fn metric(x: Vector4<f32>) -> Matrix4<f32> {
     Matrix4::new(
         -(1. - RS / x.y), 0., 0., 0.,
@@ -57,6 +67,7 @@ fn metric(x: Vector4<f32>) -> Matrix4<f32> {
     )
 }
 
+// Christoffel symbols, used to find geodesics in curved spacetime
 fn christoffel(x: Vector4<f32>, index: [usize;3]) -> Option<f32> {
     let g = metric(x);
     let g_inv = g.try_inverse()?;
@@ -77,7 +88,9 @@ fn christoffel(x: Vector4<f32>, index: [usize;3]) -> Option<f32> {
     }).sum::<f32>())
 }
 
+// One integration step, using euler's method, but normalizing the output so that steps taken are not too big or too small
 fn geodesic_step(x: Vector4<f32>, v: Vector4<f32>) -> Option<[Vector4<f32>; 2]> {
+    // imagine writing loops :3
     let dvdt = -Vector4::new(
         christoffel(x, [0, 0, 0])? * v.x * v.x 
             + 2. * christoffel(x, [0, 0, 1])? * v.x * v.y
@@ -121,8 +134,9 @@ fn geodesic_step(x: Vector4<f32>, v: Vector4<f32>) -> Option<[Vector4<f32>; 2]> 
             + christoffel(x, [3, 3, 3])? * v.w * v.w,
     );
 
-    let v_magnitude = v.y*v.y + x.y*x.y*(v.z*v.z + x.z.sin().powi(2) * v.w*v.w);
-    let dt = STEPSIZE / v_magnitude;
+    // normalize so space steps are a specific size
+    let v_space_magnitude = v.y*v.y + x.y*x.y*(v.z*v.z + x.z.sin().powi(2) * v.w*v.w);
+    let dt = STEPSIZE / v_space_magnitude;
 
     let new_v = v + dt * dvdt;
     let new_x = x + dt * v;

@@ -37,27 +37,26 @@ fn main() {
             }
         }
 
+        let last = saved_states.pop().unwrap();
+        let print_values = |extract_dim: fn(_) -> _| {
+            for state in &saved_states {
+                print!("{:.3}, ", extract_dim(state[0]));
+            }
+            println!("{:.3}]", extract_dim(last[0]));
+        };
+
         // output data in Desmos3D readable format
         println!("l_{n} = (r_{n} \\cos(p_{n}) \\sin(a_{n}), r_{n} \\sin(p_{n}) \\sin(a_{n}), r_{n} \\cos(a_{n}))");
         println!("l_{n}[1]");
 
         print!("r_{n} = [");
-        for i in 0..saved_states.len() - 1 {
-            print!("{:.3}, ", saved_states[i][0].y);
-        }
-        println!("{:.3}]", saved_states.last().unwrap()[0].y);
+        print_values(|v| v.y);
 
         print!("p_{n} = [");
-        for i in 0..saved_states.len() - 1 {
-            print!("{:.3}, ", saved_states[i][0].z);
-        }
-        println!("{:.3}]", saved_states.last().unwrap()[0].z);
+        print_values(|v| v.z);
 
         print!("a_{n} = [");
-        for i in 0..saved_states.len() - 1 {
-            print!("{:.3}, ", saved_states[i][0].w);
-        }
-        println!("{:.3}]", saved_states.last().unwrap()[0].w);
+        print_values(|v| v.w);
     }
 }
 

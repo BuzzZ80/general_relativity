@@ -37,26 +37,26 @@ fn main() {
             }
         }
 
-        let last = saved_states.pop().unwrap();
-        let print_values = |extract_dim: fn(_) -> _| {
-            for state in &saved_states {
-                print!("{:.3}, ", extract_dim(state[0]));
-            }
-            println!("{:.3}]", extract_dim(last[0]));
+        let collapse_save_states = |extract_dim: fn(_) -> _| {
+            use std::fmt::Write;
+
+            // initialize output and prepare state stream. capacity is derived from fmt: `, 0.000`
+            let mut out = String::with_capacity(saved_states.len() * 7);
+            let mut states = saved_states.iter().map(|v| extract_dim(v[0]));
+
+            // write first value, then the remaining ones with a separator
+            if let Some(v) = states.next() {let _ok = write!(out, "{v:.3}");}
+            for v in states {let _ok = write!(out, ", {v:.3}");}
+
+            out
         };
 
         // output data in Desmos3D readable format
         println!("l_{n} = (r_{n} \\cos(p_{n}) \\sin(a_{n}), r_{n} \\sin(p_{n}) \\sin(a_{n}), r_{n} \\cos(a_{n}))");
         println!("l_{n}[1]");
-
-        print!("r_{n} = [");
-        print_values(|v| v.y);
-
-        print!("p_{n} = [");
-        print_values(|v| v.z);
-
-        print!("a_{n} = [");
-        print_values(|v| v.w);
+        println!("r_{n} = [{}]", collapse_save_states(|v| v.y));
+        println!("p_{n} = [{}]", collapse_save_states(|v| v.z));
+        println!("a_{n} = [{}]", collapse_save_states(|v| v.w));
     }
 }
 
